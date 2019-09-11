@@ -16,9 +16,10 @@ from elearning.serializers import \
     StudentSerializer, TeacherSerializer, \
     CourseSerializer, BasicCourseSerializer, \
     LessionSerializer, BasicLessionSerializer, \
-    QuestionSerializer, BasicQuestionSerializer
+    QuestionSerializer, BasicQuestionSerializer, \
+    AnswerSerializer
 from elearning.constants import RESPONSE_TYPE, USER_TYPE
-from elearning.models import User, Course, Lession, Question
+from elearning.models import User, Course, Lession, Question, Answer
 from elearning.permissions import IsTeacher, IsStudent
 
 class UserViewSet(viewsets.ModelViewSet):
@@ -140,6 +141,18 @@ class QuestionViewSet(viewsets.ModelViewSet):
         if self.request.user.is_staff:
             return QuestionSerializer
         return BasicQuestionSerializer
+
+    def get_permissions(self):
+        if self.action in ['create', 'update', 'partial_update', 'destroy']:
+            permission_classes = [IsAuthenticated&(IsAdminUser|IsTeacher)]
+        else:
+            permission_classes = [IsAuthenticated]
+            
+        return [permission() for permission in permission_classes]
+
+class AnswerViewSet(viewsets.ModelViewSet):
+    queryset = Answer.objects.all()
+    serializer_class = AnswerSerializer
 
     def get_permissions(self):
         if self.action in ['create', 'update', 'partial_update', 'destroy']:

@@ -6,7 +6,7 @@ from rest_framework.authentication import authenticate
 from drf_writable_nested import WritableNestedModelSerializer
 
 from elearning.bases.serializers import SerializerBase, SerializerModelBase
-from elearning.models import User, Course, Lession, Question
+from elearning.models import User, Course, Lession, Question, Answer
 from elearning.constants import USER_TYPE
 
 class UserSerializer(SerializerModelBase):
@@ -133,3 +133,9 @@ class BasicQuestionSerializer(QuestionSerializer):
   def create(self, validated_data):
     validated_data['teacher'] = validated_data.pop('teacher_set')
     return Question.objects.create(**validated_data)
+
+
+class AnswerSerializer(SerializerModelBase):
+  class Meta:
+    model = Answer
+    fields = Answer().get_fields()
