@@ -5,7 +5,8 @@ from rest_framework import routers
 from django.contrib import admin
 from django.urls import path
 
-from elearning.views import UserViewSet, StudentViewSet, TeacherViewSet, CourseViewSet, LessionViewSet
+from elearning.views import UserViewSet, StudentViewSet, TeacherViewSet, CourseViewSet, LessionViewSet, \
+  QuestionViewSet
 
 # Routers provide an easy way of automatically determining the URL conf.
 router = routers.DefaultRouter()
@@ -14,6 +15,7 @@ router.register(r'students', StudentViewSet, base_name='students')
 router.register(r'teachers', TeacherViewSet, base_name='teachers')
 router.register(r'courses', CourseViewSet, base_name='courses')
 router.register(r'lessions', LessionViewSet, base_name='lessions')
+router.register(r'questions', QuestionViewSet, base_name='questions')
 
 # Wire up our API using automatic URL routing.
 # Additionally, we include login URLs for the browsable API.
