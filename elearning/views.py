@@ -11,9 +11,10 @@ from rest_framework.response import Response
 
 from elearning.bases.views import ViewBase, ResponseClient
 from elearning.decorators import serializer_class
-from elearning.serializers import UserSerializer, LoginSerializer, StudentSerializer, TeacherSerializer
+from elearning.serializers import UserSerializer, LoginSerializer, StudentSerializer, TeacherSerializer, CourseSerializer, BasicCourseSerializer
 from elearning.constants import RESPONSE_TYPE, USER_TYPE
-from elearning.models import User
+from elearning.models import User, Course
+from elearning.permissions import IsTeacher, IsStudent
 
 class UserViewSet(viewsets.ModelViewSet):
     queryset = User.objects.all()
@@ -79,6 +80,7 @@ class UserViewSet(viewsets.ModelViewSet):
 
 class TeacherViewSet(UserViewSet):
     serializer_class = TeacherSerializer
+    permission_classes = [IsAuthenticated&(IsAdminUser|IsTeacher)]
 
     def get_queryset(self):
         return self.queryset.filter(
@@ -87,9 +89,25 @@ class TeacherViewSet(UserViewSet):
 
 class StudentViewSet(UserViewSet):
     serializer_class = StudentSerializer
+    permission_classes = [IsAuthenticated&(IsAdminUser|IsTeacher|IsStudent)]
 
     def get_queryset(self):
         return self.queryset.filter(
             user_type=USER_TYPE.STUDENT
         )
-        
+
+class CourseViewSet(viewsets.ModelViewSet):
+    queryset = Course.objects.all()
+
+    def get_serializer_class(self):
+        if self.request.user.is_staff:
+            return CourseSerializer
+        return BasicCourseSerializer
+
+    def get_permissions(self):
+        if self.action in ['create', 'update', 'partial_update', 'destroy']:
+            permission_classes = [IsAuthenticated&(IsAdminUser|IsTeacher)]
+        else:
+            permission_classes = [IsAuthenticated]
+            
+        return [permission() for permission in permission_classes]
