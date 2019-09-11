@@ -1,13 +1,13 @@
 # API-Test
 
-### Install Python 3 and PosgreSQL
+#### Install Python 3 and PosgreSQL
 
 ```shell
 sudo apt-get update
 sudo apt-get install python3-pip python3-dev libpq-dev postgresql postgresql-contrib
 ```
 
-### Config PosgreSQL
+#### Config PosgreSQL
 Log into an interactive Postgres session by typing:
 ```shell
 sudo -u postgres psql
@@ -40,7 +40,7 @@ Exit postgres session:
 \q
 ```
 
-### Install Django within a Virtual Environment
+#### Create a Virtual Environment
 Install virtual environment:
 ```shell
 sudo pip3 install virtualenv
@@ -55,8 +55,25 @@ Activate virtual enviroment created:
 ```shell
 source projectapitest/bin/activate
 ```
-
-Install Django
+#### Clone project
 ```shell
-pip install django psycopg2
+git clone https://github.com/LeonMx/API-Test.git
+cd API-Test
+```
+#### Install libraries 
+```shell
+pip3 install -r requirements.txt
+```
+#### Run server
+Execute migrate
+```shell
+python3 manage.py migrate
+```
+Create superuser
+```shell
+python3 manage.py createsuperuser
+```
+Start run server
+```shell
+python3 manage.py runserver
 ```

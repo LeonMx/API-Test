@@ -1,28 +1,24 @@
 from django.conf.urls import url, include
 from django.contrib.auth.models import User
-from rest_framework import routers, serializers, viewsets
+from rest_framework import routers
 
 from django.contrib import admin
 from django.urls import path
-# Serializers define the API representation.
-class UserSerializer(serializers.HyperlinkedModelSerializer):
-    class Meta:
-        model = User
-        fields = ['url', 'username', 'email', 'is_staff']
 
-# ViewSets define the view behavior.
-class UserViewSet(viewsets.ModelViewSet):
-    queryset = User.objects.all()
-    serializer_class = UserSerializer
+from elearning.views import UserViewSet, StudentViewSet, TeacherViewSet
 
 # Routers provide an easy way of automatically determining the URL conf.
 router = routers.DefaultRouter()
-router.register(r'users', UserViewSet)
+router.register(r'users', UserViewSet, base_name='users')
+router.register(r'students', StudentViewSet, base_name='students')
+router.register(r'teachers', TeacherViewSet, base_name='teachers')
 
 # Wire up our API using automatic URL routing.
 # Additionally, we include login URLs for the browsable API.
 urlpatterns = [
-    url(r'^', include(router.urls)),
-    path('admin/', admin.site.urls),
-    url(r'^api-auth/', include('rest_framework.urls', namespace='rest_framework'))
+  url(r'^api/v1/', include(router.urls)),
+  url(r'^api/v1/info', UserViewSet.as_view({'get': 'info'}), name='info'),
+  url(r'^api/v1/login', UserViewSet.as_view({'post': 'login'}), name='login'),
+  url(r'^api-auth/', include('rest_framework.urls', namespace='rest_framework')),
+  path('admin/', admin.site.urls)
 ]
