@@ -11,9 +11,10 @@ from rest_framework.response import Response
 
 from elearning.bases.views import ViewBase, ResponseClient
 from elearning.decorators import serializer_class
-from elearning.serializers import UserSerializer, LoginSerializer, StudentSerializer, TeacherSerializer, CourseSerializer, BasicCourseSerializer
+from elearning.serializers import UserSerializer, LoginSerializer, StudentSerializer, \
+    TeacherSerializer, CourseSerializer, BasicCourseSerializer, LessionSerializer, BasicLessionSerializer
 from elearning.constants import RESPONSE_TYPE, USER_TYPE
-from elearning.models import User, Course
+from elearning.models import User, Course, Lession
 from elearning.permissions import IsTeacher, IsStudent
 
 class UserViewSet(viewsets.ModelViewSet):
@@ -103,6 +104,22 @@ class CourseViewSet(viewsets.ModelViewSet):
         if self.request.user.is_staff:
             return CourseSerializer
         return BasicCourseSerializer
+
+    def get_permissions(self):
+        if self.action in ['create', 'update', 'partial_update', 'destroy']:
+            permission_classes = [IsAuthenticated&(IsAdminUser|IsTeacher)]
+        else:
+            permission_classes = [IsAuthenticated]
+            
+        return [permission() for permission in permission_classes]
+
+class LessionViewSet(viewsets.ModelViewSet):
+    queryset = Lession.objects.all()
+
+    def get_serializer_class(self):
+        if self.request.user.is_staff:
+            return LessionSerializer
+        return BasicLessionSerializer
 
     def get_permissions(self):
         if self.action in ['create', 'update', 'partial_update', 'destroy']:

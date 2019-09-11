@@ -6,7 +6,7 @@ from rest_framework.authentication import authenticate
 from drf_writable_nested import WritableNestedModelSerializer
 
 from elearning.bases.serializers import SerializerBase, SerializerModelBase
-from elearning.models import User, Course
+from elearning.models import User, Course, Lession
 from elearning.constants import USER_TYPE
 
 class UserSerializer(SerializerModelBase):
@@ -78,6 +78,8 @@ class TeacherSerializer(UserSerializer):
     return super().create(validated_data)
 
 class CourseSerializer(SerializerModelBase):
+  teacher = serializers.PrimaryKeyRelatedField(queryset=User.objects.filter(user_type=USER_TYPE.TEACHER))
+
   class Meta:
     model = Course
     fields = Course().get_fields()
@@ -93,3 +95,24 @@ class BasicCourseSerializer(CourseSerializer):
   def create(self, validated_data):
     validated_data['teacher'] = validated_data.pop('teacher_set')
     return Course.objects.create(**validated_data)
+
+
+class LessionSerializer(SerializerModelBase):
+  teacher = serializers.PrimaryKeyRelatedField(queryset=User.objects.filter(user_type=USER_TYPE.TEACHER))
+
+  class Meta:
+    model = Lession
+    fields = Lession().get_fields()
+
+class BasicLessionSerializer(LessionSerializer):
+  teacher_set = serializers.HiddenField(write_only=True, default=serializers.CurrentUserDefault())
+  teacher = serializers.PrimaryKeyRelatedField(read_only=True, default=serializers.CurrentUserDefault())
+
+  class Meta(LessionSerializer.Meta):
+    fields = LessionSerializer.Meta.fields + ('teacher_set',)
+    read_only_fields = ('teacher',)
+
+  def create(self, validated_data):
+    validated_data['teacher'] = validated_data.pop('teacher_set')
+    return Lession.objects.create(**validated_data)
+

@@ -37,6 +37,9 @@ class Course(models.Model, ModelBase):
   class Meta:
     verbose_name = _('course')
     verbose_name_plural = _('courses')
+  
+  def __str__(self):
+    return self.title
 
   title = models.CharField(
     max_length=150, 
@@ -45,8 +48,8 @@ class Course(models.Model, ModelBase):
   )
   description = models.TextField(
     max_length=500, 
-    blank=False,
-    null=False
+    blank=True,
+    null=True
   )
   opened = models.BooleanField(
     default=False
@@ -69,6 +72,9 @@ class Lession(models.Model, ModelBase):
     verbose_name = _('lession')
     verbose_name_plural = _('lessions')
 
+  def __str__(self):
+    return self.title
+
   title = models.CharField(
     max_length=150, 
     null=False, 
@@ -76,11 +82,15 @@ class Lession(models.Model, ModelBase):
   )
   description = models.TextField(
     max_length=500, 
-    blank=False,
-    null=False
+    blank=True,
+    null=True
   )
   opened = models.BooleanField(
     default=False
+  )
+  approval_score = models.IntegerField(
+    blank=True, 
+    null=True
   )
   teacher = models.ForeignKey(
     User, 
