@@ -155,7 +155,7 @@ To know the parameters to send, execute the request method `OPTIONS`
 
 ### Extra
 | Method           | URI                                         | Permission      |
-|------------------|---------------|-----------------------------|-----------------|
+|------------------|---------------------------------------------|-----------------|
 | `POST`           | `users/login`                               | `ANY`           |
 | `GET`            | `users/info`                                | `ANY`           |
 | `OPTIONS` `POST` | `lessons/{id}/select_answers`               | `IsStudentUser` |
