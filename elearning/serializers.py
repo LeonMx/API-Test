@@ -1,12 +1,13 @@
 from django.utils.translation import ugettext_lazy as _
 
 from rest_framework_friendly_errors.mixins import FriendlyErrorMessagesMixin
+from rest_framework_nested.serializers import NestedHyperlinkedModelSerializer
 from rest_framework import serializers, authentication
 from rest_framework.authentication import authenticate
 from drf_writable_nested import WritableNestedModelSerializer
 
-from elearning.bases.serializers import SerializerBase, SerializerModelBase
-from elearning.models import User, Course, Lession, Question, Answer
+from elearning.bases.serializers import SerializerBase, SerializerModelBase, NestedPrimaryKeyRelatedField
+from elearning.models import User, Course, Lesson, Question, Answer
 from elearning.constants import USER_TYPE
 
 class UserSerializer(SerializerModelBase):
@@ -96,27 +97,45 @@ class BasicCourseSerializer(CourseSerializer):
     validated_data['teacher'] = validated_data.pop('teacher_set')
     return Course.objects.create(**validated_data)
 
-class LessionSerializer(SerializerModelBase):
+class LessonSerializer(SerializerModelBase):
   teacher = serializers.PrimaryKeyRelatedField(queryset=User.objects.filter(user_type=USER_TYPE.TEACHER))
+  course = NestedPrimaryKeyRelatedField(queryset=Course.objects, lookup='course')
 
   class Meta:
-    model = Lession
-    fields = Lession().get_fields()
+    model = Lesson
+    fields = Lesson().get_fields()
 
-class BasicLessionSerializer(LessionSerializer):
+class BasicLessonSerializer(LessonSerializer):
   teacher_set = serializers.HiddenField(write_only=True, default=serializers.CurrentUserDefault())
   teacher = serializers.PrimaryKeyRelatedField(read_only=True, default=serializers.CurrentUserDefault())
 
-  class Meta(LessionSerializer.Meta):
-    fields = LessionSerializer.Meta.fields + ('teacher_set',)
+  class Meta(LessonSerializer.Meta):
+    fields = LessonSerializer.Meta.fields + ('teacher_set',)
     read_only_fields = ('teacher',)
 
   def create(self, validated_data):
     validated_data['teacher'] = validated_data.pop('teacher_set')
-    return Lession.objects.create(**validated_data)
+    return Lesson.objects.create(**validated_data)
+
+class LessonPrimaryKeyRelatedField(serializers.PrimaryKeyRelatedField):
+  def get_queryset(self):
+    view = self.context.get('view', None)
+    if not view:
+      return None
+
+    lesson_pk = view.kwargs.get('lesson_pk', None)
+    queryset = super(lessonPrimaryKeyRelatedField, self).get_queryset()
+
+    if lesson_pk and queryset:
+      return queryset.filter(pk=lesson_pk)
+    elif queryset:
+      return queryset
+    else:
+      return None
 
 class QuestionSerializer(SerializerModelBase):
   teacher = serializers.PrimaryKeyRelatedField(queryset=User.objects.filter(user_type=USER_TYPE.TEACHER))
+  lesson = NestedPrimaryKeyRelatedField(queryset=Lesson.objects, lookup='lesson')
 
   class Meta:
     model = Question

@@ -11,7 +11,7 @@ class Migration(migrations.Migration):
 
     operations = [
         migrations.AddField(
-            model_name='lession',
+            model_name='lesson',
             name='approval_score',
             field=models.IntegerField(blank=True, null=True),
         ),
@@ -21,7 +21,7 @@ class Migration(migrations.Migration):
             field=models.TextField(blank=True, max_length=500, null=True),
         ),
         migrations.AlterField(
-            model_name='lession',
+            model_name='lesson',
             name='description',
             field=models.TextField(blank=True, max_length=500, null=True),
         ),

@@ -15,11 +15,11 @@ from elearning.serializers import \
     UserSerializer, LoginSerializer, \
     StudentSerializer, TeacherSerializer, \
     CourseSerializer, BasicCourseSerializer, \
-    LessionSerializer, BasicLessionSerializer, \
+    LessonSerializer, BasicLessonSerializer, \
     QuestionSerializer, BasicQuestionSerializer, \
     AnswerSerializer
 from elearning.constants import RESPONSE_TYPE, USER_TYPE
-from elearning.models import User, Course, Lession, Question, Answer
+from elearning.models import User, Course, Lesson, Question, Answer
 from elearning.permissions import IsTeacher, IsStudent
 
 class UserViewSet(viewsets.ModelViewSet):
@@ -118,13 +118,20 @@ class CourseViewSet(viewsets.ModelViewSet):
             
         return [permission() for permission in permission_classes]
 
-class LessionViewSet(viewsets.ModelViewSet):
-    queryset = Lession.objects.all()
+class LessonViewSet(viewsets.ModelViewSet):
+    queryset = Lesson.objects.all()
+
+    def get_queryset(self):
+        course_pk = self.kwargs.get('course_pk', None)
+        if course_pk:
+            return Lesson.objects.filter(course=course_pk)
+        else:
+            return Lesson.objects.all()
 
     def get_serializer_class(self):
         if self.request.user.is_staff:
-            return LessionSerializer
-        return BasicLessionSerializer
+            return LessonSerializer
+        return BasicLessonSerializer
 
     def get_permissions(self):
         if self.action in ['create', 'update', 'partial_update', 'destroy']:
@@ -136,6 +143,13 @@ class LessionViewSet(viewsets.ModelViewSet):
 
 class QuestionViewSet(viewsets.ModelViewSet):
     queryset = Question.objects.all()
+
+    def get_queryset(self):
+        lesson_pk = self.kwargs.get('lesson_pk', None)
+        if lesson_pk:
+            return Question.objects.filter(lesson=lesson_pk)
+        else:
+            return Question.objects.all()
 
     def get_serializer_class(self):
         if self.request.user.is_staff:

@@ -51,3 +51,28 @@ class SerializerModelBase(SerializerBase, WritableNestedModelSerializer):
         self.initial_data[field_name+'.'+pk_name] = related_data[pk_name]
 
     self.initial_data._mutable = False
+
+class NestedPrimaryKeyRelatedField(serializers.PrimaryKeyRelatedField):
+  lookup = None
+
+  def __init__(self, **kwargs):
+    self.lookup = kwargs.pop('lookup', self.lookup)
+    super().__init__(**kwargs)
+
+  def get_queryset(self):
+    queryset = super().get_queryset()
+    if not queryset:
+      return None
+
+    view = self.context.get('view', None)
+    if not view:
+      return None
+
+    pk = view.kwargs.get(self.lookup + '_pk', None)
+
+    print(self.lookup, pk)
+        
+    if self.lookup and pk and queryset:
+      return queryset.filter(pk=pk)
+    elif queryset:
+      return queryset

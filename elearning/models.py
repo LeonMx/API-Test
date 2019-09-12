@@ -67,10 +67,10 @@ class Course(models.Model, ModelBase):
     on_delete=models.CASCADE
   )
 
-class Lession(models.Model, ModelBase):
+class Lesson(models.Model, ModelBase):
   class Meta:
-    verbose_name = _('lession')
-    verbose_name_plural = _('lessions')
+    verbose_name = _('lesson')
+    verbose_name_plural = _('lessons')
 
   def __str__(self):
     return self.title
@@ -94,17 +94,17 @@ class Lession(models.Model, ModelBase):
   )
   teacher = models.ForeignKey(
     User, 
-    related_name='lession_teacher',
+    related_name='lesson_teacher',
     on_delete=models.CASCADE
   )
   course = models.ForeignKey(
     Course, 
-    related_name='lession_course',
+    related_name='lesson_course',
     on_delete=models.CASCADE
   )
   previous = models.ForeignKey(
     'self', 
-    related_name='lession_previous', 
+    related_name='lesson_previous', 
     blank=True, 
     null=True,
     on_delete=models.CASCADE
@@ -132,9 +132,9 @@ class Question(models.Model, ModelBase):
     blank=True, 
     null=True
   )
-  lession = models.ForeignKey(
-    Lession, 
-    related_name='question_lession',
+  lesson = models.ForeignKey(
+    Lesson, 
+    related_name='question_lesson',
     on_delete=models.CASCADE
   )
   teacher = models.ForeignKey(
@@ -162,19 +162,19 @@ class Answer(models.Model, ModelBase):
     on_delete=models.CASCADE
   )
 
-class LessionStudent(models.Model, ModelBase):
+class LessonStudent(models.Model, ModelBase):
   class Meta:
-    verbose_name = _('lession_student')
-    verbose_name_plural = _('lession_students')
+    verbose_name = _('lesson_student')
+    verbose_name_plural = _('lesson_students')
 
-  lession = models.ForeignKey(
-    Lession, 
-    related_name='lessionstudent_lession',
+  lesson = models.ForeignKey(
+    Lesson, 
+    related_name='lessonstudent_lesson',
     on_delete=models.CASCADE
   )
   student = models.ForeignKey(
     User, 
-    related_name='lessionstudent_student',
+    related_name='lessonstudent_student',
     on_delete=models.CASCADE
   )
   score = models.IntegerField(
@@ -184,8 +184,8 @@ class LessionStudent(models.Model, ModelBase):
 
 class AnswerStudent(models.Model, ModelBase):
   class Meta:
-    verbose_name = _('lession_student')
-    verbose_name_plural = _('lession_students')
+    verbose_name = _('lesson_student')
+    verbose_name_plural = _('lesson_students')
 
   answer = models.ForeignKey(
     Answer, 

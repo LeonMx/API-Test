@@ -17,9 +17,9 @@ class Migration(migrations.Migration):
             field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.CASCADE, related_name='course_previous', to='elearning.Course'),
         ),
         migrations.AddField(
-            model_name='lession',
+            model_name='lesson',
             name='previous',
-            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.CASCADE, related_name='lession_previous', to='elearning.Lession'),
+            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.CASCADE, related_name='lesson_previous', to='elearning.Lesson'),
         ),
         migrations.AlterField(
             model_name='question',

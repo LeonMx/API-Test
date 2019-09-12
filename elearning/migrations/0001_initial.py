@@ -70,18 +70,18 @@ class Migration(migrations.Migration):
             },
         ),
         migrations.CreateModel(
-            name='Lession',
+            name='Lesson',
             fields=[
                 ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
                 ('title', models.CharField(max_length=150)),
                 ('description', models.TextField(max_length=500)),
                 ('opened', models.BooleanField(default=False)),
-                ('course', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='lession_course', to='elearning.Course')),
-                ('teacher', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='lession_teacher', to='elearning.User')),
+                ('course', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='lesson_course', to='elearning.Course')),
+                ('teacher', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='lesson_teacher', to='elearning.User')),
             ],
             options={
-                'verbose_name': 'lession',
-                'verbose_name_plural': 'lessions',
+                'verbose_name': 'lesson',
+                'verbose_name_plural': 'lessons',
             },
         ),
         migrations.CreateModel(
@@ -91,7 +91,7 @@ class Migration(migrations.Migration):
                 ('text', models.CharField(max_length=150)),
                 ('type', models.IntegerField(blank=True, choices=[(1, 'boolean'), (2, 'one'), (3, 'more_than_one'), (4, 'more_than_one_all')], default=1, null=True)),
                 ('score', models.IntegerField(blank=True, null=True)),
-                ('lession', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='question_lession', to='elearning.Lession')),
+                ('lesson', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='question_lesson', to='elearning.Lesson')),
                 ('teacher', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='question_teacher', to='elearning.User')),
             ],
             options={
@@ -100,16 +100,16 @@ class Migration(migrations.Migration):
             },
         ),
         migrations.CreateModel(
-            name='LessionStudent',
+            name='LessonStudent',
             fields=[
                 ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
                 ('score', models.IntegerField(blank=True, null=True)),
-                ('lession', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='lessionstudent_lession', to='elearning.Lession')),
-                ('student', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='lessionstudent_student', to='elearning.User')),
+                ('lesson', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='lessonstudent_lesson', to='elearning.Lesson')),
+                ('student', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='lessonstudent_student', to='elearning.User')),
             ],
             options={
-                'verbose_name': 'lession_student',
-                'verbose_name_plural': 'lession_students',
+                'verbose_name': 'lesson_student',
+                'verbose_name_plural': 'lesson_students',
             },
         ),
         migrations.CreateModel(
@@ -120,8 +120,8 @@ class Migration(migrations.Migration):
                 ('student', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='answerstudent_student', to='elearning.User')),
             ],
             options={
-                'verbose_name': 'lession_student',
-                'verbose_name_plural': 'lession_students',
+                'verbose_name': 'lesson_student',
+                'verbose_name_plural': 'lesson_students',
             },
         ),
         migrations.AddField(
