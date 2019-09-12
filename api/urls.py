@@ -26,6 +26,9 @@ course_router.register(r'lessons', LessonViewSet, base_name='lessons')
 lesson_router = routers.NestedSimpleRouter(course_router, r'lessons', lookup='lesson')
 lesson_router.register(r'questions', QuestionViewSet, base_name='questions')
 
+question_router = routers.NestedSimpleRouter(lesson_router, r'questions', lookup='question')
+question_router.register(r'answers', AnswerViewSet, base_name='answers')
+
 
 # Wire up our API using automatic URL routing.
 # Additionally, we include login URLs for the browsable API.
@@ -33,6 +36,7 @@ urlpatterns = [
   url(r'^api/v1/', include(router.urls)),
   url(r'^api/v1/', include(course_router.urls)),
   url(r'^api/v1/', include(lesson_router.urls)),
+  url(r'^api/v1/', include(question_router.urls)),
   url(r'^api/v1/info', UserViewSet.as_view({'get': 'info'}), name='info'),
   url(r'^api/v1/login', UserViewSet.as_view({'post': 'login'}), name='login'),
   url(r'^api-auth/', include('rest_framework.urls', namespace='rest_framework')),

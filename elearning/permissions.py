@@ -1,7 +1,7 @@
 from rest_framework.permissions import BasePermission
 from elearning.constants import USER_TYPE
 
-class IsTeacher(BasePermission):
+class IsTeacherUser(BasePermission):
     """
     Allows access only to teacher users.
     """
@@ -9,7 +9,7 @@ class IsTeacher(BasePermission):
     def has_permission(self, request, view):
         return bool(request.user and request.user.user_type == USER_TYPE.TEACHER)
 
-class IsStudent(BasePermission):
+class IsStudentUser(BasePermission):
     """
     Allows access only to student users.
     """

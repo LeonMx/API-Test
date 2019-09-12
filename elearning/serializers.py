@@ -79,6 +79,8 @@ class TeacherSerializer(UserSerializer):
     return super().create(validated_data)
 
 class AnswerSerializer(SerializerModelBase):
+  question = NestedPrimaryKeyRelatedField(queryset=Question.objects, lookup='question')
+
   class Meta:
     model = Answer
     fields = Answer().get_fields()
@@ -106,11 +108,6 @@ class QuestionSerializer(SerializerModelBase):
     model = Question
     fields = Question().get_fields() + ('answers',)
 
-class QuestionLessonSerializer(QuestionSerializer):
-  class Meta(QuestionSerializer.Meta):
-    fields = list(QuestionSerializer.Meta.fields)
-    fields.remove('lesson')
-
 class BasicQuestionSerializer(QuestionSerializer):
   teacher_set = serializers.HiddenField(write_only=True, default=serializers.CurrentUserDefault())
   teacher = serializers.PrimaryKeyRelatedField(read_only=True, default=serializers.CurrentUserDefault())
@@ -122,6 +119,11 @@ class BasicQuestionSerializer(QuestionSerializer):
   def create(self, validated_data):
     validated_data['teacher'] = validated_data.pop('teacher_set')
     return Question.objects.create(**validated_data)
+
+class QuestionLessonSerializer(QuestionSerializer):
+  class Meta(QuestionSerializer.Meta):
+    fields = list(QuestionSerializer.Meta.fields)
+    fields.remove('lesson')
 
 class LessonSerializer(SerializerModelBase):
   teacher = serializers.PrimaryKeyRelatedField(queryset=User.objects.filter(user_type=USER_TYPE.TEACHER))

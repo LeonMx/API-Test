@@ -20,7 +20,7 @@ from elearning.serializers import \
     AnswerSerializer, LessonAnswersSerializer
 from elearning.constants import RESPONSE_TYPE, USER_TYPE, QUESTION_TYPE
 from elearning.models import User, Course, Lesson, Question, Answer, AnswerStudent, LessonStudent
-from elearning.permissions import IsTeacher, IsStudent
+from elearning.permissions import IsTeacherUser, IsStudentUser
 
 class UserViewSet(viewsets.ModelViewSet):
     queryset = User.objects.all()
@@ -86,7 +86,7 @@ class UserViewSet(viewsets.ModelViewSet):
 
 class TeacherViewSet(UserViewSet):
     serializer_class = TeacherSerializer
-    permission_classes = [IsAuthenticated&(IsAdminUser|IsTeacher)]
+    permission_classes = [IsAuthenticated&(IsAdminUser|IsTeacherUser)]
 
     def get_queryset(self):
         return self.queryset.filter(
@@ -95,7 +95,7 @@ class TeacherViewSet(UserViewSet):
 
 class StudentViewSet(UserViewSet):
     serializer_class = StudentSerializer
-    permission_classes = [IsAuthenticated&(IsAdminUser|IsTeacher|IsStudent)]
+    permission_classes = [IsAuthenticated&(IsAdminUser|IsTeacherUser)]
 
     def get_queryset(self):
         return self.queryset.filter(
@@ -105,6 +105,14 @@ class StudentViewSet(UserViewSet):
 class CourseViewSet(viewsets.ModelViewSet):
     queryset = Course.objects.all()
 
+    def get_queryset(self):
+        courses = Lesson.objects.all()
+
+        if self.request.user.user_type == USER_TYPE.STUDENT:
+            courses.objects.all().filter(opened=True)
+        
+        return courses
+
     def get_serializer_class(self):
         if self.request.user.is_staff:
             return CourseSerializer
@@ -112,7 +120,7 @@ class CourseViewSet(viewsets.ModelViewSet):
 
     def get_permissions(self):
         if self.action in ['create', 'update', 'partial_update', 'destroy']:
-            permission_classes = [IsAuthenticated&(IsAdminUser|IsTeacher)]
+            permission_classes = [IsAuthenticated&(IsAdminUser|IsTeacherUser)]
         else:
             permission_classes = [IsAuthenticated]
             
@@ -124,9 +132,14 @@ class LessonViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         course_pk = self.kwargs.get('course_pk', None)
         if course_pk:
-            return Lesson.objects.filter(course=course_pk)
+            lessons = Lesson.objects.filter(course=course_pk)
         else:
-            return Lesson.objects.all()
+            lessons = Lesson.objects.all()
+
+        if self.request.user.user_type == USER_TYPE.STUDENT:
+            lessons.filter(opened=True)
+        
+        return lessons
 
     def get_serializer_class(self):
         if not self.serializer_class:
@@ -139,9 +152,9 @@ class LessonViewSet(viewsets.ModelViewSet):
 
     def get_permissions(self):
         if self.action in ['create', 'update', 'partial_update', 'destroy']:
-            permission_classes = [IsAuthenticated&(IsAdminUser|IsTeacher)]
+            permission_classes = [IsAuthenticated&(IsAdminUser|IsTeacherUser)]
         elif self.action == 'select_answers':
-            permission_classes = [IsStudent]
+            permission_classes = [IsStudentUser]
         else:
             permission_classes = [IsAuthenticated]
             
@@ -149,41 +162,52 @@ class LessonViewSet(viewsets.ModelViewSet):
 
     @action(detail=True, methods=['post'], serializer_class=LessonAnswersSerializer)
     def select_answers(self, request, pk):
+        score = 0
+        list_answers_student = []
+
+        # get user and data from request
         user = request.user
         data = request.data
+        # get answers sended
         answers_pk = data.get('answers', None)
 
+        # validate data
         serializer = LessonAnswersSerializer(data=data, many=True)
         serializer.is_valid(raise_exception=True)
 
-        score = 0
+        # get lesson 
         lesson = Lesson.objects.get(pk=pk)
+        # get answers filtering by answers sended
         answers = Answer.objects.filter(pk__in=answers_pk)
+        # get questions filtering by answers object
         questions = Question.objects.filter(answers__in=answers)
-        list_answers_student = []
 
+        # delete previously saved answers by lesson and user
         AnswerStudent.objects.filter(answer__question__lesson=lesson, student=user).delete()
 
+        # preparing to save list answers sended for user
         for answer in answers:
             list_answers_student.append(AnswerStudent(answer=answer, student=user)) 
 
+        # save list answers
         AnswerStudent.objects.bulk_create(list_answers_student)
 
+        # get score for question type boolean answer
         def question_boolean(question, answers):
             if answers.filter(question=question, is_correct=True).exists():
                 return question.score
             else:
                 return 0
-
+        # get score for question type one answer correct
         def question_one(question, answers):
             return question_boolean(question, answers)
-
+        # get score for question type more than one answers correct
         def question_more_than_one(question, answers):
             if len(answers.filter(question=question, is_correct=True)) > 1:
                 return question.score
             else:
                 return 0
-        
+        # get score for question type more than one and all answers correct
         def question_more_than_one_all(question, answers):
             if len(Answers.objects.filter(question=question, is_correct=True)) == \
                 len(answer.filter(question=question, is_correct=True)):
@@ -191,19 +215,24 @@ class LessonViewSet(viewsets.ModelViewSet):
             else:
                 return 0
 
-        method_question = { 
+        # group method
+        method_score_question = { 
             QUESTION_TYPE.BOOLEAN : question_boolean,
             QUESTION_TYPE.ONE : question_one,
             QUESTION_TYPE.MORE_THAN_ONE : question_more_than_one,
             QUESTION_TYPE.MORE_THAN_ONE_ALL : question_more_than_one_all
         }
-
+        
+        # get score for each question
         for question in questions:
-            score += method_question[question.type](question, answers)
+            score += method_score_question[question.type](question, answers)
 
+        # delete previously saved lesson by lesson and user
         LessonStudent.objects.filter(lesson=lesson, student=user).delete()
-        LessonStudent.objects.create(lesson=lesson, student=user, score=score,)
+        # save lesson with score
+        LessonStudent.objects.create(lesson=lesson, student=user, score=score)
 
+        # is approval score?
         approval_score = lesson.approval_score
         lesson_approved = lesson.approval_score <= score
 
@@ -223,9 +252,11 @@ class QuestionViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         lesson_pk = self.kwargs.get('lesson_pk', None)
         if lesson_pk:
-            return Question.objects.filter(lesson=lesson_pk)
+            questions = Question.objects.filter(lesson=lesson_pk)
         else:
-            return Question.objects.all()
+            questions = Question.objects.all()
+
+        return question
 
     def get_serializer_class(self):
         if self.request.user.is_staff:
@@ -234,7 +265,7 @@ class QuestionViewSet(viewsets.ModelViewSet):
 
     def get_permissions(self):
         if self.action in ['create', 'update', 'partial_update', 'destroy']:
-            permission_classes = [IsAuthenticated&(IsAdminUser|IsTeacher)]
+            permission_classes = [IsAuthenticated&(IsAdminUser|IsTeacherUser)]
         else:
             permission_classes = [IsAuthenticated]
             
@@ -244,9 +275,16 @@ class AnswerViewSet(viewsets.ModelViewSet):
     queryset = Answer.objects.all()
     serializer_class = AnswerSerializer
 
+    def get_queryset(self):
+        question_pk = self.kwargs.get('question_pk', None)
+        if question_pk:
+            return Answer.objects.filter(question=question_pk)
+        else:
+            return Answer.objects.all()
+
     def get_permissions(self):
         if self.action in ['create', 'update', 'partial_update', 'destroy']:
-            permission_classes = [IsAuthenticated&(IsAdminUser|IsTeacher)]
+            permission_classes = [IsAuthenticated&(IsAdminUser|IsTeacherUser)]
         else:
             permission_classes = [IsAuthenticated]
             
