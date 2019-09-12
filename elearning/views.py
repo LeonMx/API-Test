@@ -209,7 +209,9 @@ class LessonViewSet(viewsets.ModelViewSet):
 
         return ResponseClient(
             type=RESPONSE_TYPE.SUCCESS,
-            message= (_("Lesson approved with %s score") if lesson_approved else _("Lesson not approved. Your score is %s. At least %s point are required")) % (score, approval_score),
+            message= (_("Lesson approved with %s score")) % (score) \
+                if lesson_approved else \
+                    (_("Lesson not approved. Your score is %s. At least %s point are required")) % (score, approval_score),
             data={
                 "score": score,
             }
