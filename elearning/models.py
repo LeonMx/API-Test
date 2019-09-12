@@ -134,7 +134,7 @@ class Question(models.Model, ModelBase):
   )
   lesson = models.ForeignKey(
     Lesson, 
-    related_name='question_lesson',
+    related_name='questions',
     on_delete=models.CASCADE
   )
   teacher = models.ForeignKey(
@@ -148,6 +148,9 @@ class Answer(models.Model, ModelBase):
     verbose_name = _('answer')
     verbose_name_plural = _('answers')
 
+  def __str__(self):
+    return self.text
+
   text = models.CharField(
     max_length=150, 
     null=False, 
@@ -158,7 +161,7 @@ class Answer(models.Model, ModelBase):
   )
   question = models.ForeignKey(
     Question, 
-    related_name='answer_question',
+    related_name='answers',
     on_delete=models.CASCADE
   )
 

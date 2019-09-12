@@ -69,8 +69,6 @@ class NestedPrimaryKeyRelatedField(serializers.PrimaryKeyRelatedField):
       return None
 
     pk = view.kwargs.get(self.lookup + '_pk', None)
-
-    print(self.lookup, pk)
         
     if self.lookup and pk and queryset:
       return queryset.filter(pk=pk)

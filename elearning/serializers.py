@@ -7,7 +7,7 @@ from rest_framework.authentication import authenticate
 from drf_writable_nested import WritableNestedModelSerializer
 
 from elearning.bases.serializers import SerializerBase, SerializerModelBase, NestedPrimaryKeyRelatedField
-from elearning.models import User, Course, Lesson, Question, Answer
+from elearning.models import User, Course, Lesson, Question, Answer, AnswerStudent
 from elearning.constants import USER_TYPE
 
 class UserSerializer(SerializerModelBase):
@@ -78,6 +78,96 @@ class TeacherSerializer(UserSerializer):
     validated_data['user_type'] = USER_TYPE.TEACHER
     return super().create(validated_data)
 
+class AnswerSerializer(SerializerModelBase):
+  class Meta:
+    model = Answer
+    fields = Answer().get_fields()
+
+class AnswerQuestionSerializer(AnswerSerializer):
+  class Meta(AnswerSerializer.Meta):
+    fields = list(AnswerSerializer.Meta.fields)
+    fields.remove('question')
+    fields.remove('is_correct')
+
+class AnswerStudentSerializer(SerializerModelBase):
+  answer = AnswerSerializer()
+  student = StudentSerializer()
+
+  class Meta:
+    model = AnswerStudent
+    fields = AnswerStudent().get_fields()
+    
+class QuestionSerializer(SerializerModelBase):
+  teacher = serializers.PrimaryKeyRelatedField(queryset=User.objects.filter(user_type=USER_TYPE.TEACHER))
+  lesson = NestedPrimaryKeyRelatedField(queryset=Lesson.objects, lookup='lesson')
+  answers = AnswerQuestionSerializer(read_only=True, many=True)
+
+  class Meta:
+    model = Question
+    fields = Question().get_fields() + ('answers',)
+
+class QuestionLessonSerializer(QuestionSerializer):
+  class Meta(QuestionSerializer.Meta):
+    fields = list(QuestionSerializer.Meta.fields)
+    fields.remove('lesson')
+
+class BasicQuestionSerializer(QuestionSerializer):
+  teacher_set = serializers.HiddenField(write_only=True, default=serializers.CurrentUserDefault())
+  teacher = serializers.PrimaryKeyRelatedField(read_only=True, default=serializers.CurrentUserDefault())
+
+  class Meta(QuestionSerializer.Meta):
+    fields = QuestionSerializer.Meta.fields + ('teacher_set',)
+    read_only_fields = ('teacher',)
+
+  def create(self, validated_data):
+    validated_data['teacher'] = validated_data.pop('teacher_set')
+    return Question.objects.create(**validated_data)
+
+class LessonSerializer(SerializerModelBase):
+  teacher = serializers.PrimaryKeyRelatedField(queryset=User.objects.filter(user_type=USER_TYPE.TEACHER))
+  course = NestedPrimaryKeyRelatedField(queryset=Course.objects, lookup='course')
+  questions = QuestionLessonSerializer(read_only=True, many=True)
+
+  class Meta:
+    model = Lesson
+    fields = Lesson().get_fields() + ('questions',)
+
+class BasicLessonSerializer(LessonSerializer):
+  teacher_set = serializers.HiddenField(write_only=True, default=serializers.CurrentUserDefault())
+  teacher = serializers.PrimaryKeyRelatedField(read_only=True, default=serializers.CurrentUserDefault())
+
+  class Meta(LessonSerializer.Meta):
+    fields = LessonSerializer.Meta.fields + ('teacher_set',)
+    read_only_fields = ('teacher',)
+
+  def create(self, validated_data):
+    validated_data['teacher'] = validated_data.pop('teacher_set')
+    return Lesson.objects.create(**validated_data)
+ 
+class LessonAnswerPrimaryKeyRelatedField(serializers.PrimaryKeyRelatedField):
+  def get_queryset(self):
+    queryset = super().get_queryset()
+    if not queryset:
+      return None
+
+    view = self.context.get('view', None)
+    if not view:
+      return None
+
+    pk = view.kwargs.get('pk', None)
+    
+    if pk and queryset:
+      return queryset.filter(question__lesson=pk)
+    elif queryset:
+      return queryset
+
+class LessonAnswersSerializer(SerializerModelBase):
+  answers = LessonAnswerPrimaryKeyRelatedField(queryset=Answer.objects, many=True) 
+
+  class Meta:
+    model = Answer
+    fields = ('answers',)
+   
 class CourseSerializer(SerializerModelBase):
   teacher = serializers.PrimaryKeyRelatedField(queryset=User.objects.filter(user_type=USER_TYPE.TEACHER))
 
@@ -96,65 +186,3 @@ class BasicCourseSerializer(CourseSerializer):
   def create(self, validated_data):
     validated_data['teacher'] = validated_data.pop('teacher_set')
     return Course.objects.create(**validated_data)
-
-class LessonSerializer(SerializerModelBase):
-  teacher = serializers.PrimaryKeyRelatedField(queryset=User.objects.filter(user_type=USER_TYPE.TEACHER))
-  course = NestedPrimaryKeyRelatedField(queryset=Course.objects, lookup='course')
-
-  class Meta:
-    model = Lesson
-    fields = Lesson().get_fields()
-
-class BasicLessonSerializer(LessonSerializer):
-  teacher_set = serializers.HiddenField(write_only=True, default=serializers.CurrentUserDefault())
-  teacher = serializers.PrimaryKeyRelatedField(read_only=True, default=serializers.CurrentUserDefault())
-
-  class Meta(LessonSerializer.Meta):
-    fields = LessonSerializer.Meta.fields + ('teacher_set',)
-    read_only_fields = ('teacher',)
-
-  def create(self, validated_data):
-    validated_data['teacher'] = validated_data.pop('teacher_set')
-    return Lesson.objects.create(**validated_data)
-
-class LessonPrimaryKeyRelatedField(serializers.PrimaryKeyRelatedField):
-  def get_queryset(self):
-    view = self.context.get('view', None)
-    if not view:
-      return None
-
-    lesson_pk = view.kwargs.get('lesson_pk', None)
-    queryset = super(lessonPrimaryKeyRelatedField, self).get_queryset()
-
-    if lesson_pk and queryset:
-      return queryset.filter(pk=lesson_pk)
-    elif queryset:
-      return queryset
-    else:
-      return None
-
-class QuestionSerializer(SerializerModelBase):
-  teacher = serializers.PrimaryKeyRelatedField(queryset=User.objects.filter(user_type=USER_TYPE.TEACHER))
-  lesson = NestedPrimaryKeyRelatedField(queryset=Lesson.objects, lookup='lesson')
-
-  class Meta:
-    model = Question
-    fields = Question().get_fields()
-
-class BasicQuestionSerializer(QuestionSerializer):
-  teacher_set = serializers.HiddenField(write_only=True, default=serializers.CurrentUserDefault())
-  teacher = serializers.PrimaryKeyRelatedField(read_only=True, default=serializers.CurrentUserDefault())
-
-  class Meta(QuestionSerializer.Meta):
-    fields = QuestionSerializer.Meta.fields + ('teacher_set',)
-    read_only_fields = ('teacher',)
-
-  def create(self, validated_data):
-    validated_data['teacher'] = validated_data.pop('teacher_set')
-    return Question.objects.create(**validated_data)
-
-
-class AnswerSerializer(SerializerModelBase):
-  class Meta:
-    model = Answer
-    fields = Answer().get_fields()
